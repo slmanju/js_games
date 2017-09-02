@@ -21,22 +21,14 @@
         L: { code: 6, color: "#FFFF00" },
         I: { code: 7, color: "#000000" },
         get: function (code) {
-            switch (code) {
-                case 1:
-                    return ColorCode.T.color;
-                case 2:
-                    return ColorCode.O.color;
-                case 3:
-                    return ColorCode.J.color;
-                case 4:
-                    return ColorCode.S.color;
-                case 5:
-                    return ColorCode.Z.color;
-                case 6:
-                    return ColorCode.L.color;
-                default:
-                    return ColorCode.I.color;
+            var key, object;
+            for (key in ColorCode) {
+                object = ColorCode[key];
+                if (object.code === code) {
+                    return object.color;
+                }
             }
+            return ColorCode.I.color;
         }
     };
 
