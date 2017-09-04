@@ -19,7 +19,7 @@
         S: { code: 4, color: "#FF1493" },
         Z: { code: 5, color: "#8B008B" },
         L: { code: 6, color: "#FFFF00" },
-        I: { code: 7, color: "#000000" },
+        I: { code: 7, color: "#ffffff" },
         get: function (code) {
             var key, object;
             for (key in ColorCode) {
@@ -426,6 +426,13 @@
         return tetromino;
     };
 
+    function ScoreBoard() {
+        var board = document.getElementById("score");
+        this.update = function (score) {
+            board.innerHTML = score;
+        };
+    }
+
     function Game() {
         this.canvas = document.getElementById("tetris");
         this.context = this.canvas.getContext("2d");
@@ -433,6 +440,7 @@
         this.tetromino = this.tetrominos.get();
         this.board = [];
         this.landed = [];
+        this.scoreboard = new ScoreBoard();
     }
 
     Game.prototype.init = function () {
@@ -440,10 +448,12 @@
             this.landed[row] = [];
             this.board[row] = [];
             for (var col = 0; col < 10; col = col + 1) {
-                this.landed[row][col] = (row > 13 && (col < 3 || col > 7)) ? 1 : 0;
+                this.landed[row][col] = 0;
                 this.board[row][col] = 0;
             }
         }
+        this.score = 0;
+        this.scoreboard.update(this.score);
     };
 
     Game.prototype.drawBoard = function () {
@@ -533,16 +543,33 @@
         this.loop();
     };
 
+    Game.prototype.over = function () {
+        var firstRow = this.landed[0], col;
+        for (col = 0; col < 16; col = col + 1) {
+            if (firstRow[col] > 0) {
+                return true;
+            }
+        }
+        return false;
+    };
+
     Game.prototype.loop = function () {
-        this.context.clearRect(0, 0, 300, 480);
-        this.drawBoard();
         if (this.isLanded()) {
             this.addToLanded();
             this.tetromino = this.tetrominos.get();
         }
+        this.clearLines();
+        this.context.clearRect(0, 0, 300, 480);
+        this.drawBoard();
         this.drawLanded();
         this.tetromino.draw();
-        this.tetromino.moveDown();
+        if (this.over()) {
+            window.cancelAnimationFrame(requestId);
+            this.score = this.score + " Game Over!!!";
+        } else {
+            this.tetromino.moveDown();
+        }
+        this.scoreboard.update(this.score);
     };
 
     Game.prototype.move = function (key) {
@@ -615,16 +642,35 @@
         }
     };
 
+    Game.prototype.clearLines = function () {
+        var isFilled;
+        for (var row = 0; row < this.landed.length; row++) {
+            isFilled = true;
+            for (var col = 0; col < this.landed[row].length; col++) {
+                if (this.landed[row][col] === 0) {
+                    isFilled = false;
+                }
+            }
+            if (isFilled) {
+                //remove the filled line sub-array from the array
+                this.landed.splice(row, 1);
+                //add a new empty line sub-array to the start of the array
+                this.landed.unshift([0, 0, 0, 0, 0, 0, 0, 0, 0, 0]);
+                this.score = this.score + 100;
+            }
+        }
+    };
+
     var game = new Game();
-    game.init();
 
     var now = Date.now(),
         then = Date.now(),
         fpsInterval = 1000 / 2,
-        elapsed;
+        elapsed,
+        requestId;
 
     function animate() {
-        window.requestAnimationFrame(animate);
+        requestId = window.requestAnimationFrame(animate);
         now = Date.now();
         elapsed = now - then;
         if (elapsed > fpsInterval) {
@@ -653,5 +699,9 @@
         }
     }, false);
 
-    animate();
+    document.getElementById("start").addEventListener("click", function () {
+        game.init();
+        game.start();
+        animate();
+    }, false);
 } ());
