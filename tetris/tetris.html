@@ -5,18 +5,28 @@
 		<style>
 			canvas {
 				position: absolute;
-				top: 20px;
+				margin-top: 20px;
 				left: 20px;
 				background: transparent;
 				border: solid 1px black;
 			}
+
+            #scoreboard {
+                margin-top: 20px;
+                margin-left: 20px;
+            }
 		</style>
 	</head>
 	<body>
-		<!-- The canvas for the panning background -->
-		<canvas id="tetris" width="300" height="480">
-			Your browser does not support canvas. Please try again with a different browser.
-		</canvas>
+		<div id="scoreboard">
+			<button id="start">Start</button>
+			Score : <span id="score">0, Click "Start" button to start the game.</span>
+		</div>
+		<div>
+			<canvas id="tetris" width="300" height="480">
+				Your browser does not support canvas. Please try again with a different browser.
+			</canvas>
+		</div>
 		<script src="tetris.js"></script>
 	</body>
 </html>
