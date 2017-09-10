@@ -1,5 +1,5 @@
 # js_games
-Games created to learn Javascript.
+Javascript games collection.
 
 http://mjcoolapps.blogspot.com
 
