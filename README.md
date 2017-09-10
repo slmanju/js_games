@@ -3,10 +3,11 @@ Games created to learn Javascript.
 
 http://mjcoolapps.blogspot.com
 
+Taxi Game : http://mjcoolapps.blogspot.com/2017/01/tanji-taxi-game.html
 
-snake : http://mjcoolapps.blogspot.com/2017/01/classic-game-snake.html
+Snake : http://mjcoolapps.blogspot.com/2017/01/classic-game-snake.html
 
-breakout : http://mjcoolapps.blogspot.com/2017/01/classic-game-breakout.html
+Tetris : http://mjcoolapps.blogspot.com/2017/09/tetris.html
 
-taxi : http://mjcoolapps.blogspot.com/2017/01/tanji-taxi-game.html
+
 
