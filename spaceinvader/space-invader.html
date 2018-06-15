@@ -2,19 +2,19 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>SpaceKru</title>
+    <title>Space Invader</title>
 
     <style>
-        .bs-canvas {
-            border: 1px solid #000;
+        canvas {
+            padding: 10px;
         }
     </style>
 </head>
 <body>
 
-<div>
-    <canvas id="main_canvas" class="bs-canvas" width="500" height="500"></canvas>
-    <canvas id="score-board" class="bs-canvas" width="500" height="500"></canvas>
+<div style="position: relative; background-color: black;">
+    <canvas id="main_canvas" width="500" height="500" style="position: absolute; left: 0; top: 0; z-index: 0; background-color: black;"></canvas>
+    <canvas id="score-board" width="500" height="500" style="position: absolute; left: 0; top: 0; z-index: 1;"></canvas>
 </div>
 
 <script src="space-invader.js"></script>

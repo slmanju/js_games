@@ -24,7 +24,7 @@
         detect: function (bullets, ships, callback) {
             bullets.forEach(function (bullet) {
                 ships.forEach(function (ship) {
-                    if (bullet.getBounding().intersects(ship.getBounding())) {
+                    if (bullet.isAlive() && ship.isAlive() && bullet.getBounding().intersects(ship.getBounding())) {
                         bullet.collide();
                         ship.collide();
                         callback();
@@ -66,6 +66,10 @@
     } ());
 
     function Game() {
+        this.settings = {
+            speedFactor: 0.2,
+            lives: 3
+        };
         this.state = null;
         this.keys = [];
         this.width = WIDTH;
@@ -73,15 +77,21 @@
 
         this.score = 0;
         this.level = 1;
-        this._lives = 3;
+        this._lives = this.settings.lives;
     }
+
+    Game.prototype.reset = function () {
+        this.score = 0;
+        this.level = 1;
+        this._lives = this.settings.lives;
+    };
 
     Game.prototype.hit = function () {
         this._lives--;
     };
 
     Game.prototype.isDead = function () {
-        return this._lives === 3;
+        return this._lives === 0;
     };
 
     Game.prototype.updateScore = function () {
@@ -186,7 +196,7 @@
         GameState.call(this, game);
         this.level = level;
         this.countdownMessage = "3";
-        this.countdown = 3; // countdown from 3 secs
+        this.countdown = 3;
         this.timeStart = Date.now();
     }
 
@@ -196,16 +206,15 @@
     LevelIntroState.prototype.update = function() {
         let now = Date.now();
         let delta = now - this.timeStart;
-        //  Update the countdown.
         this.countdown -= delta / 60000;
 
-        if(this.countdown < 2) {
+        if (this.countdown < 2) {
             this.countdownMessage = "2";
         }
-        if(this.countdown < 1) {
+        if (this.countdown < 1) {
             this.countdownMessage = "1";
         }
-        if(this.countdown <= 0) {
+        if (this.countdown <= 0) {
             this.game.setState(new PlayState(this.game, this.level));
         }
     };
@@ -225,11 +234,14 @@
 
     function PlayState(game, level) {
         GameState.call(this, game);
-        this.level = level;
-        this._heroBulletPool = new BulletPool(3);
-        this.hero = new Hero(this._heroBulletPool);
-        this._enemyBulletPool = new BulletPool(5);
-        this._enemyPool = new EnemyPool(10, this._enemyBulletPool);
+        this._level = level;
+        this._heroBulletPool = new BulletPool(15 + (level - 1) * 2);
+        this._hero = new Hero({
+            bulletPool: this._heroBulletPool,
+            speed: 3 + (level - 1) * game.settings.speedFactor
+        });
+        this._enemyBulletPool = new BulletPool(5 + (level - 1) * 2);
+        this._enemyPool = new EnemyPool(20, this._enemyBulletPool);
         this._scoreBoard = new ScoreBoard(game);
     }
 
@@ -238,23 +250,27 @@
 
     PlayState.prototype.update = function() {
         let game = this.game;
-        this.hero.update(this.keys);
+        this._hero.update(this.keys);
         CollisionDetector.detect(this._heroBulletPool.bullets, this._enemyPool._objects, function () {
             game.updateScore();
         });
-        CollisionDetector.detect(this._enemyBulletPool.bullets, [ this.hero ], function () {
+        CollisionDetector.detect(this._enemyBulletPool.bullets, [ this._hero ], function () {
             game.hit();
         });
 
         if (this._enemyPool._objects.length === 0) {
             game.levelWon();
+            this._level++;
+            game.setState(new LevelIntroState(game, this._level));
+        }
+        if (game.isDead()) {
             game.setState(new GameOverState(game));
         }
     };
 
     PlayState.prototype.draw = function (context) {
         context.clearRect(0, 0, game.width, game.height);
-        this.hero.draw(context);
+        this._hero.draw(context);
         this._heroBulletPool.animate(context);
         this._enemyPool.animate(context);
         this._enemyBulletPool.animate(context);
@@ -292,6 +308,13 @@
         context.fillText("Press 'Space' to start.", game.width / 2, game.height / 2);
     };
 
+    GameOverState.prototype.keyDown = function (keys) {
+        if (keys[32]) { // space key
+            this.game.reset();
+            this.game.setState(new LevelIntroState(this.game, 1));
+        }
+    };
+
     function ScoreBoard(game) {
         this._game = game;
         this._context = document.getElementById("score-board").getContext("2d");
@@ -301,14 +324,12 @@
         let game = this._game;
         let context = this._context;
         context.clearRect(0, 0, game.width, game.height);
-
-        context.fillStyle = "black";
-        context.fillRect(0, 0, canvas.width, canvas.height);
-        context.font = "30px Arial";
-        context.fillStyle = '#ffffff';
-        context.textBaseline = "center";
+        context.font = "14px Arial";
+        context.fillStyle = '#77ff5e';
+        context.textBaseline = "top";
         context.textAlign = "center";
-        context.fillText(game.level + ' : ' + game.getScore(), game.width - 100, 100);
+        context.fillText('Level : ' + game.level, game.width - 50, 10);
+        context.fillText('Score : ' + game.getScore(), game.width - 50, 30);
     };
 
     function Sprite(x, y, speed) {
@@ -346,7 +367,7 @@
         this.speed = speed;
         this.size = 10;
         this.alive = true;
-        this._style = "#140102";
+        this._style = "#fff2ce";
     }
 
     Bullet.prototype.getBounding = function () {
@@ -362,6 +383,10 @@
 
     Bullet.prototype.collide = function () {
         this.alive = false;
+    };
+
+    Bullet.prototype.isAlive = function () {
+        return this.alive;
     };
 
     Bullet.prototype.draw = function (context) {
@@ -408,6 +433,10 @@
         this._bulletPool = bulletPool;
     }
 
+    Enemy.prototype.isAlive = function () {
+        return this.alive;
+    };
+
     Enemy.prototype.getBounding = function () {
         return new Rectangle(this.x, this.y, this.size, this.size);
     };
@@ -415,11 +444,11 @@
     Enemy.prototype.move = function() {
         if (this.x < this.leftEdge) {
             this.direction = 0;
-            this.y = this.y + 10;
+            this.y = this.y + this.size / 2;
         }
         if (this.x > this.rightEdge) {
             this.direction = 1;
-            this.y = this.y + 10;
+            this.y = this.y + this.size / 2;
         }
         if (this.direction === 1) {
             this.x = this.x - this.speed;
@@ -460,7 +489,7 @@
         let x = 120;
         let y = 30;
         let spacer = y * 1.5;
-        for (let i = 1; i <= 15; i++) {
+        for (let i = 1; i <= size; i++) {
             this.spawn(x, y, 2);
             x += 30 + 25;
             if (i % 5 === 0) {
@@ -501,17 +530,21 @@
         });
     };
 
-    function Hero(bulletPool) {
+    function Hero(params) {
         this.size = 30;
         this.x = WIDTH / 2;
         this.y = HEIGHT - this.size;
-        this.speed = 3;
+        this.speed = params.speed;
 
-        this.lastShootTime = 0;  // time when we last shoot
-        this.shootRate = 100;    // time between two bullets. (in ms)
+        this.lastShootTime = 0;
+        this.shootRate = 100;
 
-        this._bulletPool = bulletPool;
+        this._bulletPool = params.bulletPool;
     }
+
+    Hero.prototype.isAlive = function () {
+        return true;
+    };
 
     Hero.prototype.getBounding = function () {
         return new Rectangle(this.x, this.y, this.size, this.size);
@@ -535,7 +568,7 @@
         if (now - this.lastShootTime  < this.shootRate)  return;
         this.lastShootTime = now;
         if (keys && keys[32]) {
-            this._bulletPool.spawn(this.x, this.y, -3);
+            this._bulletPool.spawn(this.x + this.size / 2, this.y, -3);
         }
     };
 
